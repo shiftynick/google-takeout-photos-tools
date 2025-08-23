@@ -18,11 +18,11 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
 
     intro = """
     ╔══════════════════════════════════════════════════════════════════╗
-    ║         Google Photos Takeout Explorer - Interactive Mode       ║
+    ║         Google Photos Takeout Explorer - Interactive Mode        ║
     ╠══════════════════════════════════════════════════════════════════╣
-    ║  Type 'help' for commands or 'help <command>' for details       ║
-    ║  Tab completion available for commands and arguments            ║
-    ║  Type 'quit' or 'exit' to leave                                ║
+    ║  Type 'help' for commands or 'help <command>' for details        ║
+    ║  Tab completion available for commands and arguments             ║
+    ║  Type 'quit' or 'exit' to leave                                  ║
     ╚══════════════════════════════════════════════════════════════════╝
     """
 
