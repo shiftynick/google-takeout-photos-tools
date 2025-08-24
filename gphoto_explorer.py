@@ -139,6 +139,16 @@ Examples:
         help="Include metadata files (.json) in upload",
     )
     parser.add_argument(
+        "--upload-include-thumbnails",
+        action="store_true",
+        help="Also generate and upload thumbnails prefixed with 'thumb-'",
+    )
+    parser.add_argument(
+        "--upload-thumbnails-only",
+        action="store_true",
+        help="Upload only generated thumbnails (skip originals)",
+    )
+    parser.add_argument(
         "--provider",
         default="azure",
         metavar="PROVIDER",
@@ -287,6 +297,8 @@ Examples:
                 album_names,
                 target=target,
                 include_metadata=args.upload_include_metadata,
+                include_thumbnails=args.upload_include_thumbnails,
+                thumbnails_only=args.upload_thumbnails_only,
                 progress_callback=album_progress,
                 file_progress_callback=file_progress,
             )
@@ -315,6 +327,8 @@ Examples:
                 args.upload_pattern,
                 target=target,
                 include_metadata=args.upload_include_metadata,
+                include_thumbnails=args.upload_include_thumbnails,
+                thumbnails_only=args.upload_thumbnails_only,
                 progress_callback=progress_callback,
                 file_progress_callback=lambda c, t, _: file_progress(c, t, ""),
             )

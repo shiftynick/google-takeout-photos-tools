@@ -27,6 +27,7 @@ Notes
 - **Smart searching** - Use regex patterns to find specific files
 - **Date analysis** - Discover the time range of your photo collection
 - **Selective extraction** - Extract only the files you need
+ - **Thumbnail uploads** - New! Generate thumbnails on upload (512×512 max) with filenames prefixed by `thumb-`, or upload thumbnails only
 
 ## Installation
 
@@ -38,6 +39,9 @@ pip install -r requirements.txt
 # Make the script executable
 chmod +x gphoto_explorer.py
 ```
+
+Notes:
+- Thumbnail generation requires Pillow, which is included in `requirements.txt`.
 
 ## Usage
 
@@ -186,6 +190,36 @@ python gphoto_explorer.py ~/GooglePhotosDownload \
   --upload-prefix ad-hoc/
 ```
 
+#### Thumbnail Uploads
+
+You can generate thumbnails during upload. Thumbnails use the same folder as the original and are saved with a `thumb-` filename prefix (e.g., `IMG_1234.jpg` → `thumb-IMG_1234.jpg`). Default thumbnail size is up to 512×512 while preserving aspect ratio.
+
+CLI examples:
+
+```bash
+# Upload albums and include thumbnails alongside originals
+python gphoto_explorer.py ~/GooglePhotosDownload \
+  --upload-albums "Photos from 2023" \
+  --upload-include-thumbnails
+
+# Upload only thumbnails (skip originals)
+python gphoto_explorer.py ~/GooglePhotosDownload \
+  --upload-albums "Photos from 2023" \
+  --upload-thumbnails-only
+
+# Pattern upload with thumbnails
+python gphoto_explorer.py ~/GooglePhotosDownload \
+  --upload-pattern ".*\\.(jpg|jpeg|png)$" \
+  --upload-include-thumbnails
+```
+
+Interactive mode examples:
+
+- `upload_albums "Photos from 2023" --thumbs`
+- `upload_albums "Photos from 2023" --thumbs-only`
+- `upload_pattern ".*\\.jpg" --thumbs`
+- `upload_results --thumbs-only`
+
 Environment variables (override stored config):
 
 - `AZURE_STORAGE_CONNECTION_STRING`
@@ -195,6 +229,7 @@ Environment variables (override stored config):
 Notes:
 - Upload destination path is `<prefix>/<album>/<relative_path>` for album uploads, or `<prefix>/<archive_path>` for pattern/search uploads.
 - Only Azure is supported today, but the design allows additional providers in the future.
+ - Thumbnails are saved next to originals with `thumb-` prefix; for album uploads, thumbnails are placed under the album folder.
 
 ## Examples
 
@@ -321,6 +356,7 @@ When extracting metadata, each entry contains:
 - Requires enough RAM to hold one zip file's index in memory
 - JSON metadata parsing expects Google Takeout format
 - Date analysis relies on Google Photos metadata structure
+ - Thumbnail generation supports common raster formats (JPEG/PNG/GIF/BMP/WebP). HEIC thumbnails are currently not generated; originals still upload.
 
 ## Error Handling
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .config import ConfigManager
+from .thumbnail import generate_thumbnail
 from .upload import UploadTarget, build_provider, detect_content_type, sanitize_blob_path
 
 
@@ -756,6 +757,8 @@ class GooglePhotosExplorer:
         include_metadata: bool = True,
         progress_callback=None,
         file_progress_callback=None,
+        include_thumbnails: bool = False,
+        thumbnails_only: bool = False,
     ) -> Dict[str, Any]:
         """Upload one or more albums to a storage provider.
 
@@ -853,12 +856,41 @@ class GooglePhotosExplorer:
                     destination_path = sanitize_blob_path(base_prefix + dest_relative)
                     content_type = detect_content_type(file_name)
 
+                    # Upload original and/or thumbnail
                     with zipfile.ZipFile(zip_path, "r") as zf:
                         with zf.open(file_name) as source:
-                            provider.upload_stream(source, destination_path, content_type=content_type)
+                            data = source.read()
 
-                    album_stats["files"] += 1
-                    stats["files_uploaded"] += 1
+                    ext = Path(file_name).suffix.lower()
+                    is_image = ext in {
+                        ".jpg",
+                        ".jpeg",
+                        ".png",
+                        ".gif",
+                        ".bmp",
+                        ".webp",
+                        ".heic",
+                    }
+
+                    # Upload original unless thumbnails_only is set
+                    if not thumbnails_only:
+                        provider.upload_bytes(data, destination_path, content_type=content_type)
+                        album_stats["files"] += 1
+                        stats["files_uploaded"] += 1
+
+                    # Upload thumbnail if requested and if it's an image we can handle
+                    if (include_thumbnails or thumbnails_only) and is_image:
+                        try:
+                            thumb_bytes, thumb_ct = generate_thumbnail(data, original_ext=ext, max_size=(512, 512))
+                            if thumb_bytes and thumb_ct:
+                                thumb_dest_relative = f"{album_name}/thumb-" + Path(dest_relative).name
+                                thumb_destination_path = sanitize_blob_path(base_prefix + thumb_dest_relative)
+                                provider.upload_bytes(thumb_bytes, thumb_destination_path, content_type=thumb_ct)
+                                album_stats["files"] += 1
+                                stats["files_uploaded"] += 1
+                        except Exception:
+                            # Ignore thumbnail errors; originals may still upload
+                            pass
 
                     # If media, collect manifest entry with metadata
                     ext = Path(file_name).suffix.lower()
@@ -933,6 +965,8 @@ class GooglePhotosExplorer:
         include_metadata: bool = False,
         progress_callback=None,
         file_progress_callback=None,
+        include_thumbnails: bool = False,
+        thumbnails_only: bool = False,
     ) -> Dict[str, Any]:
         """Upload files matching a regex pattern across all zips.
 
@@ -975,8 +1009,27 @@ class GooglePhotosExplorer:
                 content_type = detect_content_type(file_name)
                 with zipfile.ZipFile(zip_path, "r") as zf:
                     with zf.open(file_name) as source:
-                        provider.upload_stream(source, destination_path, content_type=content_type)
-                stats["files_uploaded"] += 1
+                        data = source.read()
+
+                ext = Path(file_name).suffix.lower()
+                is_image = ext in {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic"}
+
+                if not thumbnails_only:
+                    provider.upload_bytes(data, destination_path, content_type=content_type)
+                    stats["files_uploaded"] += 1
+
+                if (include_thumbnails or thumbnails_only) and is_image:
+                    try:
+                        thumb_bytes, thumb_ct = generate_thumbnail(data, original_ext=ext, max_size=(512, 512))
+                        if thumb_bytes and thumb_ct:
+                            from pathlib import Path as _P
+
+                            thumb_archive_path = str(_P(file_name).with_name("thumb-" + _P(file_name).name))
+                            thumb_destination_path = sanitize_blob_path(base_prefix + thumb_archive_path)
+                            provider.upload_bytes(thumb_bytes, thumb_destination_path, content_type=thumb_ct)
+                            stats["files_uploaded"] += 1
+                    except Exception:
+                        pass
             except Exception as e:
                 stats["errors"] += 1
                 if len(stats["error_details"]) < 50:
@@ -992,6 +1045,8 @@ class GooglePhotosExplorer:
         target: Optional[UploadTarget] = None,
         include_metadata: bool = False,
         file_progress_callback=None,
+        include_thumbnails: bool = False,
+        thumbnails_only: bool = False,
     ) -> Dict[str, Any]:
         """Upload files from a precomputed results mapping of zip_name -> file paths."""
         config = ConfigManager()
@@ -1025,8 +1080,27 @@ class GooglePhotosExplorer:
                 content_type = detect_content_type(file_name)
                 with zipfile.ZipFile(zip_path, "r") as zf:
                     with zf.open(file_name) as source:
-                        provider.upload_stream(source, destination_path, content_type=content_type)
-                stats["files_uploaded"] += 1
+                        data = source.read()
+
+                ext = Path(file_name).suffix.lower()
+                is_image = ext in {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic"}
+
+                if not thumbnails_only:
+                    provider.upload_bytes(data, destination_path, content_type=content_type)
+                    stats["files_uploaded"] += 1
+
+                if (include_thumbnails or thumbnails_only) and is_image:
+                    try:
+                        thumb_bytes, thumb_ct = generate_thumbnail(data, original_ext=ext, max_size=(512, 512))
+                        if thumb_bytes and thumb_ct:
+                            from pathlib import Path as _P
+
+                            thumb_archive_path = str(_P(file_name).with_name("thumb-" + _P(file_name).name))
+                            thumb_destination_path = sanitize_blob_path(base_prefix + thumb_archive_path)
+                            provider.upload_bytes(thumb_bytes, thumb_destination_path, content_type=thumb_ct)
+                            stats["files_uploaded"] += 1
+                    except Exception:
+                        pass
             except Exception as e:
                 stats["errors"] += 1
                 if len(stats["error_details"]) < 50:

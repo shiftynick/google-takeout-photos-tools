@@ -310,15 +310,19 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
     def do_upload_albums(self, args):
         """Upload one or more albums to Azure storage.
         Usage:
-          upload_albums [album1,album2,...] [--container NAME] [--prefix PFX] [-m]
+          upload_albums [album1,album2,...] [--container NAME] [--prefix PFX] [-m] [--thumbs] [--thumbs-only]
         If no albums are specified, interactive album selection is shown.
         Flags:
           -m / --include-metadata  Include JSON metadata files
+          --thumbs                 Also upload thumbnails (prefixed 'thumb-')
+          --thumbs-only            Upload only thumbnails (skip originals)
         """
         # Parse flags
         include_metadata = False
         container = None
         prefix = None
+        include_thumbnails = False
+        thumbnails_only = False
         tokens = args.split() if args else []
         albums_arg = None
         i = 0
@@ -326,6 +330,13 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
             tok = tokens[i]
             if tok in {"-m", "--include-metadata"}:
                 include_metadata = True
+                i += 1
+            elif tok == "--thumbs":
+                include_thumbnails = True
+                i += 1
+            elif tok == "--thumbs-only":
+                thumbnails_only = True
+                include_thumbnails = True
                 i += 1
             elif tok == "--container" and i + 1 < len(tokens):
                 container = self._clean_cli_value(tokens[i + 1]).lower()
@@ -367,6 +378,8 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
             album_names,
             target=target,
             include_metadata=include_metadata,
+            include_thumbnails=include_thumbnails,
+            thumbnails_only=thumbnails_only,
             progress_callback=album_progress,
             file_progress_callback=file_progress,
         )
@@ -374,7 +387,7 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
 
     def do_upload_results(self, args):
         """Upload files from the last search results to Azure storage.
-        Usage: upload_results [--container NAME] [--prefix PFX] [-m]
+        Usage: upload_results [--container NAME] [--prefix PFX] [-m] [--thumbs] [--thumbs-only]
         """
         if not self.last_search_results:
             print("No search results available. Run 'search' first.")
@@ -382,12 +395,21 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
         include_metadata = False
         container = None
         prefix = None
+        include_thumbnails = False
+        thumbnails_only = False
         tokens = args.split() if args else []
         i = 0
         while i < len(tokens):
             tok = tokens[i]
             if tok in {"-m", "--include-metadata"}:
                 include_metadata = True
+                i += 1
+            elif tok == "--thumbs":
+                include_thumbnails = True
+                i += 1
+            elif tok == "--thumbs-only":
+                thumbnails_only = True
+                include_thumbnails = True
                 i += 1
             elif tok == "--container" and i + 1 < len(tokens):
                 container = self._clean_cli_value(tokens[i + 1]).lower()
@@ -412,6 +434,8 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
             self.last_search_results,
             target=target,
             include_metadata=include_metadata,
+            include_thumbnails=include_thumbnails,
+            thumbnails_only=thumbnails_only,
             file_progress_callback=lambda c, t, fn: file_progress(c, t, fn),
         )
         print()
@@ -419,7 +443,7 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
 
     def do_upload_pattern(self, args):
         """Upload files matching a regex pattern to Azure storage.
-        Usage: upload_pattern <PATTERN> [--container NAME] [--prefix PFX] [-m]
+        Usage: upload_pattern <PATTERN> [--container NAME] [--prefix PFX] [-m] [--thumbs] [--thumbs-only]
         """
         if not args:
             print("Usage: upload_pattern <PATTERN> [--container NAME] [--prefix PFX] [-m]")
@@ -429,11 +453,20 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
         include_metadata = False
         container = None
         prefix = None
+        include_thumbnails = False
+        thumbnails_only = False
         i = 1
         while i < len(tokens):
             tok = tokens[i]
             if tok in {"-m", "--include-metadata"}:
                 include_metadata = True
+                i += 1
+            elif tok == "--thumbs":
+                include_thumbnails = True
+                i += 1
+            elif tok == "--thumbs-only":
+                thumbnails_only = True
+                include_thumbnails = True
                 i += 1
             elif tok == "--container" and i + 1 < len(tokens):
                 container = self._clean_cli_value(tokens[i + 1]).lower()
@@ -461,6 +494,8 @@ class GooglePhotosInteractiveShell(cmd.Cmd):
             pattern,
             target=target,
             include_metadata=include_metadata,
+            include_thumbnails=include_thumbnails,
+            thumbnails_only=thumbnails_only,
             progress_callback=progress_callback,
             file_progress_callback=lambda c, t, _: file_progress(c, t, ""),
         )
